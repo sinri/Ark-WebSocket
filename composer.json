@@ -1,0 +1,28 @@
+{
+    "name": "sinri/ark-websocket",
+    "description": "Ark WebSocket Component",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Sinri Edogawa",
+            "email": "e.joshua.s.e@gmail.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "sinri/ark-core": "~2.0"
+    },
+    "autoload": {
+        "sinri\\ark\\websocket\\": "src/"
+    },
+    "autoload-dev": {
+        "sinri\\ark\\websocket\\test\\": "test/"
+    },
+    "repositories": {
+        "packagist": {
+            "type": "composer",
+            "url": "https://mirrors.aliyun.com/composer/"
+        }
+    }
+}
