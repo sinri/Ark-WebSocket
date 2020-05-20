@@ -239,9 +239,9 @@ class ArkWebSocketDaemon
      */
     protected function broadcastMessage($msg)
     {
-        foreach ($this->clients as $socketHash=>$changed_socket) {
-            $written=@socket_write($changed_socket, $msg, strlen($msg));
-            $this->logger->debug('broadcast message, written to socket '.intval($changed_socket),['hash'=>$socketHash,'written'=>$written]);
+        foreach ($this->clients as $socketHash => $changed_socket) {
+            $written = @socket_write($changed_socket, $msg, strlen($msg));
+            $this->logger->debug('broadcast message, written to socket ' . intval($changed_socket), ['hash' => $socketHash, 'written' => $written]);
         }
     }
 
@@ -249,9 +249,17 @@ class ArkWebSocketDaemon
      * @param resource $socket
      * @return string|false
      */
-    protected static function getClientHash($socket){
-        $done=socket_getpeername($socket, $ip,$port); //get ip address of connected socket
-        return $done ? ($ip.':'.$port) : false;
+    protected function getClientHash($socket)
+    {
+        // @since 0.0.3 guess this reason
+        if ($socket == null) {
+            return 'nil';
+        }
+        if ($this->socket === $socket) {
+            return "server";
+        }
+        $done = socket_getpeername($socket, $ip, $port); //get ip address of connected socket
+        return $done ? ($ip . ':' . $port) : false;
     }
 
     /**
