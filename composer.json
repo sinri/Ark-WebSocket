@@ -14,10 +14,14 @@
         "sinri/ark-core": "~2.0"
     },
     "autoload": {
-        "sinri\\ark\\websocket\\": "src/"
+        "psr-4": {
+            "sinri\\ark\\websocket\\": "src/"
+        }
     },
     "autoload-dev": {
-        "sinri\\ark\\websocket\\test\\": "test/"
+        "psr-4": {
+            "sinri\\ark\\websocket\\test\\": "test/"
+        }
     },
     "repositories": {
         "packagist": {
