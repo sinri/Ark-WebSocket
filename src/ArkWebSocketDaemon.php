@@ -169,17 +169,18 @@ class ArkWebSocketDaemon
         $this->logger->debug('begin reading socket',['hash'=>$client_hash,'socket'=>intval($changed_socket)]);
         $buffer=null;
         while(true){
-            $readBytes=socket_recv($changed_socket,$bufferPiece,10240,0);
-            if($readBytes===false){
+            // @since 0.0.5 not block it
+            $readBytes = socket_recv($changed_socket, $bufferPiece, 10240, MSG_DONTWAIT);
+            if ($readBytes === false) {
                 $this->logger->warning('socket_recv get false');
                 break;
             }
-            if($readBytes===0){
+            if ($readBytes === 0) {
                 $this->logger->warning('socket_recv get empty data');
                 break;
             }
-            if($buffer===null)$buffer='';
-            $buffer.=$bufferPiece;
+            if ($buffer === null) $buffer = '';
+            $buffer .= $bufferPiece;
 
             $this->logger->debug('read piece',['piece_length'=>strlen($bufferPiece),'total_length'=>strlen($buffer)]);
         }
