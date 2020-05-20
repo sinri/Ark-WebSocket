@@ -114,10 +114,16 @@ class ArkWebSocketDaemon
      */
     private function getChangedSockets(){
         $changed = $this->clients;
-        $selected=socket_select($changed, $null, $null, 0, 10);
-        $this->logger->debug('readable sockets selected out',['selected'=>$selected,'total'=>count($changed)]);
-        foreach ($changed as $key=>$value){
-            $this->logger->debug('changed socket iterator',['key'=>$key,'value'=>intval($value)]);
+        $selected = socket_select($changed, $null, $null, 0, 10);
+        if ($selected === false) {
+            $error_code = socket_last_error();
+            $error_string = socket_strerror($error_code);
+            $this->logger->warning('socket select failed, ' . $error_code . ' ' . $error_string);
+        } elseif ($selected > 0) {
+            $this->logger->debug('readable sockets selected out', ['selected' => $selected, 'total' => count($changed)]);
+            foreach ($changed as $key => $value) {
+                $this->logger->debug('changed socket iterator', ['key' => $key, 'value' => intval($value)]);
+            }
         }
         return $changed;
     }
