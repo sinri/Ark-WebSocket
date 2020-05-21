@@ -1,5 +1,7 @@
 # Ark Websocket
 
+![Packagist Version](https://img.shields.io/packagist/v/sinri/Ark-WebSocket)
+
 ## Usage
 
 ### Design your own class extending ArkWebSocketWorker and Daemon
