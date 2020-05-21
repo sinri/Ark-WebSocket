@@ -9,3 +9,4 @@ composer.phar
 config.php
 /log/
 /debug/
+/test/config.php
