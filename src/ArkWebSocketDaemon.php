@@ -83,11 +83,25 @@ class ArkWebSocketDaemon
         $this->logger->info('a new client came up');
         $socket_new = socket_accept($this->connections->getSocket()); //accept new socket
 
-        $header = socket_read($socket_new, 1024); //read data sent by the socket
+        $header = '';
+        while (true) {
+            $readBytes = socket_recv($socket_new, $headerPiece, 1024, MSG_DONTWAIT);
+            if ($readBytes === false) {
+                $error_code = socket_last_error();
+                $error_text = socket_strerror($error_code);
+                $this->logger->error('New Client Cannot read header piece', ['socket' => intval($socket_new), 'error_code' => $error_code, 'error_text' => $error_text]);
+                break;
+            }
+            if ($readBytes === 0) {
+                break;
+            }
+            $header .= $headerPiece;
+        }
+        //$header = socket_read($socket_new, 1024); //read data sent by the socket
         $this->perform_handshaking($header, $socket_new); //perform websocket handshake
 
         $client_hash = $this->connections->getClientHash($socket_new);
-        $this->logger->info('new client identified', ['hash' => $client_hash]);
+        $this->logger->info('new client identified', ['hash' => $client_hash, 'socket' => intval($socket_new)]);
 
         //add socket to client array
         $this->connections->registerClient($socket_new);
@@ -108,49 +122,72 @@ class ArkWebSocketDaemon
     /**
      * @param resource $changed_socket
      */
-    private function readSocket($changed_socket){
+    private function readSocket($changed_socket)
+    {
         $client_hash = $this->connections->getClientHash($changed_socket);
         $this->logger->debug('begin reading socket', ['hash' => $client_hash, 'socket' => intval($changed_socket)]);
-        $buffer=null;
-        while(true){
-            // @since 0.0.5 not block it
-            $readBytes = @socket_recv($changed_socket, $bufferPiece, 10240, MSG_DONTWAIT);
-            if ($readBytes === false) {
-                $this->logger->warning('socket_recv get false', ['client' => intval($changed_socket)]);
-                break;
-            }
-            if ($readBytes === 0) {
-                $this->logger->warning('socket_recv get empty data', ['client' => intval($changed_socket)]);
-                break;
-            }
-            if ($buffer === null) $buffer = '';
-            $buffer .= $bufferPiece;
+        $buffer = '';
+        try {
+            while (true) {
+                // @since 0.0.5 not block it
+                $readBytes = @socket_recv($changed_socket, $bufferPiece, 10240, MSG_DONTWAIT);
+                if ($readBytes === false) {
+                    $error_code = socket_last_error();
+                    $error_text = socket_strerror($error_code);
+                    $this->logger->error(
+                        'socket_recv got false, seems died',
+                        [
+                            'hash' => $client_hash,
+                            'client' => intval($changed_socket),
+                            'error_code' => $error_code,
+                            'error_text' => $error_text
+                        ]
+                    );
+                    $this->connections->removeClient($changed_socket);
+                    //plugin
+                    $this->worker->processCloseSocket($client_hash);
+                    throw new Exception("socket_recv got false, seems died.", intval($changed_socket));
+                }
+                if ($readBytes === 0) {
+                    //$this->logger->warning('socket_recv get empty data', ['client' => intval($changed_socket)]);
+                    break;
+                }
+                $buffer .= $bufferPiece;
 
-            $this->logger->debug('read piece', ['client' => intval($changed_socket), 'piece_length' => strlen($bufferPiece), 'total_length' => strlen($buffer)]);
-        }
-        if($buffer!==null) {
-//            $received_text = self::unmask($buffer); //unmask data
-//            $this->logger->debug('read with something',['text'=>$received_text]);
+                $this->logger->debug('read piece', ['hash' => $client_hash, 'client' => intval($changed_socket), 'piece_length' => strlen($bufferPiece), 'total_length' => strlen($buffer)]);
+            }
 
             // plugin
             $this->worker->processReadMessage($client_hash, $buffer);
-        }else{
-            $this->logger->debug('read without anything, try to check if died');
-            $buf = @socket_read($changed_socket, 1024, PHP_NORMAL_READ);
-            if ($buf === false) { // check disconnected client
-                $this->logger->warning('socket seems died', ['hash' => $client_hash]);
-                // remove client for $this->clients array
-                $this->connections->removeClient($changed_socket);
-
-                //notify all users about disconnected connection
-
-                //plugin
-                $this->worker->processCloseSocket($client_hash);
-
-//                $response = self::mask($response);
-//                $this->broadcastMessage($response);
-            }
+        } catch (Exception $exception) {
+            // bye bye
         }
+//        if($buffer!==null) {
+////            $received_text = self::unmask($buffer); //unmask data
+////            $this->logger->debug('read with something',['text'=>$received_text]);
+//
+//            // plugin
+//            $this->worker->processReadMessage($client_hash, $buffer);
+//        }
+//        else{
+//
+//
+//            $this->logger->debug('read without anything, try to check if died');
+//            $buf = @socket_read($changed_socket, 1024, PHP_NORMAL_READ);
+//            if ($buf === false) { // check disconnected client
+//                $this->logger->warning('socket seems died', ['hash' => $client_hash]);
+//                // remove client for $this->clients array
+//                $this->connections->removeClient($changed_socket);
+//
+//                //notify all users about disconnected connection
+//
+//                //plugin
+//                $this->worker->processCloseSocket($client_hash);
+//
+////                $response = self::mask($response);
+////                $this->broadcastMessage($response);
+//            }
+//        }
     }
 
     /**
