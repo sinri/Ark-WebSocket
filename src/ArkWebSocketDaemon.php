@@ -182,7 +182,11 @@ class ArkWebSocketDaemon
 
                 foreach ($changed as $changed_socket) {
                     if (false == $this->connections->getClientHash($changed_socket)) {
-                        if (is_resource($changed_socket)) socket_shutdown($changed_socket);
+                        if (is_resource($changed_socket)) {
+                            socket_shutdown($changed_socket);
+                            $this->connections->removeClient($changed_socket);
+                            socket_close($changed_socket);
+                        }
                         continue;
                     }
                     if ($changed_socket === $this->connections->getSocket()) {
