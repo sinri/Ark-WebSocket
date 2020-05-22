@@ -113,6 +113,7 @@ abstract class ArkWebSocketWorker
      */
     public static function unmask($text)
     {
+        if (strlen($text) === 0) return '';
         $length = ord($text[1]) & 127;
         if ($length == 126) {
             $masks = substr($text, 4, 4);

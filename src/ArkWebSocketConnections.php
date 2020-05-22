@@ -122,9 +122,8 @@ class ArkWebSocketConnections
      */
     public function getClientHash($socket)
     {
-        // @since 0.0.3 guess this reason
         if ($socket == null) {
-            return 'nil';
+            return false;
         }
         if ($this->getSocket() === $socket) {
             return "server";

@@ -107,12 +107,7 @@ class ArkWebSocketDaemon
         $this->connections->registerClient($socket_new);
 
         //plugin
-        //$this->logger->debug('let worker handle new socket...');
         $this->worker->processNewSocket($client_hash, $header);
-
-        // make room for new socket
-        $found_socket = array_search($this->connections->getSocket(), $changed);
-        unset($changed[$found_socket]);
 
         $this->logger->info('new client socket processed');
     }
@@ -123,6 +118,10 @@ class ArkWebSocketDaemon
     private function readSocket($changed_socket)
     {
         $client_hash = $this->connections->getClientHash($changed_socket);
+        if ($client_hash === false) {
+            $this->logger->error(__METHOD__ . ' the socket to read is not valid', ['socket' => intval($changed_socket), 'hash' => $client_hash]);
+            return;
+        }
         $this->logger->debug(__METHOD__ . ' begin reading socket', ['hash' => $client_hash, 'socket' => intval($changed_socket)]);
         $buffer = '';
         try {
@@ -130,24 +129,27 @@ class ArkWebSocketDaemon
                 // @since 0.0.5 not block it
                 $readBytes = socket_recv($changed_socket, $bufferPiece, 1024, MSG_DONTWAIT);
                 if ($readBytes === false) {
-                    $error_code = socket_last_error();
-                    $error_text = socket_strerror($error_code);
-                    $this->logger->error(
-                        __METHOD__ . ' socket_recv got false, seems died',
-                        [
-                            'hash' => $client_hash,
-                            'client' => intval($changed_socket),
-                            'error_code' => $error_code,
-                            'error_text' => $error_text
-                        ]
-                    );
-                    $this->connections->removeClient($changed_socket);
-                    //plugin
-                    $this->worker->processCloseSocket($client_hash);
-                    throw new Exception(__METHOD__ . " socket_recv got false, seems died.", intval($changed_socket));
+                    // when buffer read out, false would return with error: resource temporary not available
+                    if (strlen($buffer) === 0) {
+                        $error_code = socket_last_error();
+                        $error_text = socket_strerror($error_code);
+                        $this->logger->error(
+                            __METHOD__ . ' socket_recv got false, seems died',
+                            [
+                                'hash' => $client_hash,
+                                'client' => intval($changed_socket),
+                                'error_code' => $error_code,
+                                'error_text' => $error_text
+                            ]
+                        );
+                        $this->connections->removeClient($changed_socket);
+                        //plugin
+                        $this->worker->processCloseSocket($client_hash);
+                        throw new Exception(__METHOD__ . " socket_recv got false, seems died.", intval($changed_socket));
+                    }
+                    break;
                 }
                 if ($readBytes === 0) {
-                    //$this->logger->warning('socket_recv get empty data', ['client' => intval($changed_socket)]);
                     break;
                 }
                 $buffer .= $bufferPiece;
@@ -160,32 +162,6 @@ class ArkWebSocketDaemon
         } catch (Exception $exception) {
             // bye bye
         }
-//        if($buffer!==null) {
-////            $received_text = self::unmask($buffer); //unmask data
-////            $this->logger->debug('read with something',['text'=>$received_text]);
-//
-//            // plugin
-//            $this->worker->processReadMessage($client_hash, $buffer);
-//        }
-//        else{
-//
-//
-//            $this->logger->debug('read without anything, try to check if died');
-//            $buf = @socket_read($changed_socket, 1024, PHP_NORMAL_READ);
-//            if ($buf === false) { // check disconnected client
-//                $this->logger->warning('socket seems died', ['hash' => $client_hash]);
-//                // remove client for $this->clients array
-//                $this->connections->removeClient($changed_socket);
-//
-//                //notify all users about disconnected connection
-//
-//                //plugin
-//                $this->worker->processCloseSocket($client_hash);
-//
-////                $response = self::mask($response);
-////                $this->broadcastMessage($response);
-//            }
-//        }
     }
 
     /**
@@ -203,14 +179,17 @@ class ArkWebSocketDaemon
             $this->logger->info('daemon loop running...');
             while (true) {
                 $changed = $this->getChangedSockets();
-                //check for new socket
-                if (in_array($this->connections->getSocket(), $changed)) {
-                    $this->handleNewConnection($changed);
-                }
 
-                //loop through all connected sockets
                 foreach ($changed as $changed_socket) {
-                    $this->readSocket($changed_socket);
+                    if (false == $this->connections->getClientHash($changed_socket)) {
+                        if (is_resource($changed_socket)) socket_shutdown($changed_socket);
+                        continue;
+                    }
+                    if ($changed_socket === $this->connections->getSocket()) {
+                        $this->handleNewConnection($changed);
+                    } else {
+                        $this->readSocket($changed_socket);
+                    }
                 }
             }
         } catch (Exception $exception) {
