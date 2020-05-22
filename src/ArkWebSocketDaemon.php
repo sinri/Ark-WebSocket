@@ -97,7 +97,7 @@ class ArkWebSocketDaemon
             }
             $header .= $headerPiece;
         }
-        //$header = socket_read($socket_new, 1024); //read data sent by the socket
+
         $this->perform_handshaking($header, $socket_new); //perform websocket handshake
 
         $client_hash = $this->connections->getClientHash($socket_new);
@@ -107,16 +107,14 @@ class ArkWebSocketDaemon
         $this->connections->registerClient($socket_new);
 
         //plugin
-        $this->logger->debug('let worker handle new socket...');
+        //$this->logger->debug('let worker handle new socket...');
         $this->worker->processNewSocket($client_hash, $header);
-
-        // broadcast should be done in process
-        // $this->worker->maskAndBroadcastToClients($response);
-        //$this->logger->debug('broadcast this news');
 
         // make room for new socket
         $found_socket = array_search($this->connections->getSocket(), $changed);
         unset($changed[$found_socket]);
+
+        $this->logger->info('new client socket processed');
     }
 
     /**
@@ -125,17 +123,17 @@ class ArkWebSocketDaemon
     private function readSocket($changed_socket)
     {
         $client_hash = $this->connections->getClientHash($changed_socket);
-        $this->logger->debug('begin reading socket', ['hash' => $client_hash, 'socket' => intval($changed_socket)]);
+        $this->logger->debug(__METHOD__ . ' begin reading socket', ['hash' => $client_hash, 'socket' => intval($changed_socket)]);
         $buffer = '';
         try {
             while (true) {
                 // @since 0.0.5 not block it
-                $readBytes = @socket_recv($changed_socket, $bufferPiece, 10240, MSG_DONTWAIT);
+                $readBytes = socket_recv($changed_socket, $bufferPiece, 1024, MSG_DONTWAIT);
                 if ($readBytes === false) {
                     $error_code = socket_last_error();
                     $error_text = socket_strerror($error_code);
                     $this->logger->error(
-                        'socket_recv got false, seems died',
+                        __METHOD__ . ' socket_recv got false, seems died',
                         [
                             'hash' => $client_hash,
                             'client' => intval($changed_socket),
@@ -146,7 +144,7 @@ class ArkWebSocketDaemon
                     $this->connections->removeClient($changed_socket);
                     //plugin
                     $this->worker->processCloseSocket($client_hash);
-                    throw new Exception("socket_recv got false, seems died.", intval($changed_socket));
+                    throw new Exception(__METHOD__ . " socket_recv got false, seems died.", intval($changed_socket));
                 }
                 if ($readBytes === 0) {
                     //$this->logger->warning('socket_recv get empty data', ['client' => intval($changed_socket)]);
@@ -154,7 +152,7 @@ class ArkWebSocketDaemon
                 }
                 $buffer .= $bufferPiece;
 
-                $this->logger->debug('read piece', ['hash' => $client_hash, 'client' => intval($changed_socket), 'piece_length' => strlen($bufferPiece), 'total_length' => strlen($buffer)]);
+                $this->logger->debug(__METHOD__ . ' read piece', ['hash' => $client_hash, 'client' => intval($changed_socket), 'piece_length' => strlen($bufferPiece), 'total_length' => strlen($buffer)]);
             }
 
             // plugin
@@ -218,7 +216,7 @@ class ArkWebSocketDaemon
         } catch (Exception $exception) {
             $error_code = socket_last_error();
             $error_string = socket_strerror($error_code);
-            $this->logger->error($exception->getMessage(), ['error_code' => $error_code, 'error_string' => $error_string]);
+            $this->logger->error(__METHOD__ . ' ' . $exception->getMessage(), ['error_code' => $error_code, 'error_string' => $error_string]);
             throw new Exception($exception->getMessage() . ', error [' . $error_code . '] ' . $error_string);
         } finally {
             $this->logger->info('daemon loop ending (this line would never be printed)');
