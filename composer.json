@@ -13,6 +13,9 @@
     "require": {
         "sinri/ark-core": "~2.0"
     },
+    "suggest": {
+        "ext-sockets": "*"
+    },
     "autoload": {
         "psr-4": {
             "sinri\\ark\\websocket\\": "src/"

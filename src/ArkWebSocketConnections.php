@@ -5,6 +5,7 @@ namespace sinri\ark\websocket;
 
 
 use Exception;
+use sinri\ark\core\ArkHelper;
 
 class ArkWebSocketConnections
 {
@@ -130,6 +131,16 @@ class ArkWebSocketConnections
         }
         $done = @socket_getpeername($socket, $ip, $port); //get ip address of connected socket
         return $done ? ($ip . ':' . $port) : false;
+    }
+
+    /**
+     * @param string $clientHash
+     * @return resource|null
+     * @since 0.1.1
+     */
+    public function getClientByHash($clientHash)
+    {
+        return ArkHelper::readTarget($this->clients, $clientHash);
     }
 
     /**

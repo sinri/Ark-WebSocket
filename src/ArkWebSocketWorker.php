@@ -69,6 +69,27 @@ abstract class ArkWebSocketWorker
     }
 
     /**
+     * @param string[] $clientHashList
+     * @param string $original_msg
+     * @return $this
+     * @since 0.1.1
+     */
+    public function maskAndSendToClients($clientHashList, $original_msg)
+    {
+        $msg = self::mask($original_msg);
+        foreach ($clientHashList as $clientHash) {
+            $client = $this->connections->getClientByHash($clientHash);
+            if ($client === null || !is_resource($client)) {
+                $this->logger->warning(__METHOD__ . ' not a valid resource, passover', ['hash' => $clientHash, 'got' => $client]);
+                continue;
+            }
+            $written = @socket_write($client, $msg, strlen($msg));
+            $this->logger->debug('send to message, written to socket ' . intval($client), ['hash' => $clientHash, 'written' => $written]);
+        }
+        return $this;
+    }
+
+    /**
      * @param string $text
      * @return string
      */
