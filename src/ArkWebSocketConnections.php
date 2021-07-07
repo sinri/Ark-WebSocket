@@ -4,8 +4,8 @@
 namespace sinri\ark\websocket;
 
 
-use Exception;
 use sinri\ark\core\ArkHelper;
+use sinri\ark\websocket\exception\ArkWebSocketError;
 
 class ArkWebSocketConnections
 {
@@ -27,7 +27,7 @@ class ArkWebSocketConnections
     /**
      * @return resource[]
      */
-    public function getClients()
+    public function getClients(): array
     {
         return $this->clients;
     }
@@ -47,7 +47,7 @@ class ArkWebSocketConnections
      * @param string $hash
      * @return $this
      */
-    public function removeClientByHash($hash)
+    public function removeClientByHash(string $hash)
     {
         unset($this->clients[$hash]);
         return $this;
@@ -56,7 +56,7 @@ class ArkWebSocketConnections
     /**
      * @param callable $callback function($hash,$client)
      */
-    public function handleEachClient($callback)
+    public function handleEachClient(callable $callback)
     {
         foreach ($this->clients as $hash => $client) {
             call_user_func_array($callback, [$hash, $client]);
@@ -66,7 +66,7 @@ class ArkWebSocketConnections
     /**
      * @return int
      */
-    public function getCountOfClients()
+    public function getCountOfClients(): int
     {
         return count($this->clients);
     }
@@ -75,33 +75,33 @@ class ArkWebSocketConnections
      * @param int $port
      * @param string|int $address
      * @return $this
-     * @throws Exception
+     * @throws ArkWebSocketError
      */
-    public function startListening($port, $address = 0)
+    public function startListening(int $port, $address = 0)
     {
         //Create TCP/IP stream socket
         //$this->logger->debug('creating socket...');
         $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
         if ($socket === false) {
-            throw new Exception('cannot create socket');
+            throw new ArkWebSocketError('cannot create socket');
         }
         //reusable port
         //$this->logger->debug('setting socket as address-reusable...');
         $done = socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1);
         if (!$done) {
-            throw new Exception('cannot set socket reusable');
+            throw new ArkWebSocketError('cannot set socket reusable');
         }
         //bind socket to specified host
         //$this->logger->debug('binding socket to address and port...');
         $done = socket_bind($socket, $address, $port);
         if (!$done) {
-            throw new Exception('cannot bind socket to port');
+            throw new ArkWebSocketError('cannot bind socket to port');
         }
         //listen to port
         //$this->logger->debug('socket is ready to listen...');
         $done = socket_listen($socket);
         if (!$done) {
-            throw new Exception('cannot listen to port');
+            throw new ArkWebSocketError('cannot listen to port');
         }
         //create & add listening socket to the list
         //$this->registerNewClient($socket);
@@ -137,7 +137,7 @@ class ArkWebSocketConnections
      * @return resource|null
      * @since 0.1.1
      */
-    public function getClientByHash($clientHash)
+    public function getClientByHash(string $clientHash)
     {
         return ArkHelper::readTarget($this->clients, $clientHash);
     }
@@ -162,10 +162,10 @@ class ArkWebSocketConnections
 
     /**
      * @param resource $client
-     * @param string $hash
+     * @param string|null $hash
      * @return ArkWebSocketConnections
      */
-    public function registerClient($client, $hash = null)
+    public function registerClient($client, string $hash = null)
     {
         if ($hash === null) {
             $hash = $this->getClientHash($client);

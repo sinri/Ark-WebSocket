@@ -1,5 +1,4 @@
 <?php
-require __DIR__ . '/config.php';
 
 use Psr\Log\LogLevel;
 use sinri\ark\core\ArkLogger;
@@ -17,6 +16,12 @@ $logger->removeCurrentLogFile();
 $connections = new ArkWebSocketConnections();
 
 $worker = new SampleWorker($connections, $logger);
+
+$host = '127.0.0.1';
+$port = 4444;
+$servicePath = '/ws';
+//override
+require __DIR__ . '/config.php';
 
 $daemon = new ArkWebSocketDaemon(
     $host,

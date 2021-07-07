@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e5deb84b521231e228483eef85336074",
+    "content-hash": "5c83f85a6baa1eaa22ab69bf5b548fe7",
     "packages": [
         {
             "name": "psr/log",
-            "version": "1.1.3",
+            "version": "1.1.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/php-fig/log.git",
-                "reference": "0f73288fd15629204f9d42b7055f72dacbe811fc"
+                "reference": "d49695b909c3b7628b6289db5479a1c204601f11"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/php-fig/log/zipball/0f73288fd15629204f9d42b7055f72dacbe811fc",
-                "reference": "0f73288fd15629204f9d42b7055f72dacbe811fc",
+                "url": "https://api.github.com/repos/php-fig/log/zipball/d49695b909c3b7628b6289db5479a1c204601f11",
+                "reference": "d49695b909c3b7628b6289db5479a1c204601f11",
                 "shasum": "",
                 "mirrors": [
                     {
@@ -47,7 +47,7 @@
             "authors": [
                 {
                     "name": "PHP-FIG",
-                    "homepage": "http://www.php-fig.org/"
+                    "homepage": "https://www.php-fig.org/"
                 }
             ],
             "description": "Common interface for logging libraries",
@@ -57,20 +57,23 @@
                 "psr",
                 "psr-3"
             ],
-            "time": "2020-03-23T09:12:05+00:00"
+            "support": {
+                "source": "https://github.com/php-fig/log/tree/1.1.4"
+            },
+            "time": "2021-05-03T11:20:27+00:00"
         },
         {
             "name": "sinri/ark-core",
-            "version": "2.7.0",
+            "version": "2.7.12",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sinri/Ark-Core.git",
-                "reference": "2c6191e9a6ba60792f190b26ab1a791131336f94"
+                "reference": "87bea4d2572a05b0b5bf120227116df56a63d26d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sinri/Ark-Core/zipball/2c6191e9a6ba60792f190b26ab1a791131336f94",
-                "reference": "2c6191e9a6ba60792f190b26ab1a791131336f94",
+                "url": "https://api.github.com/repos/sinri/Ark-Core/zipball/87bea4d2572a05b0b5bf120227116df56a63d26d",
+                "reference": "87bea4d2572a05b0b5bf120227116df56a63d26d",
                 "shasum": "",
                 "mirrors": [
                     {
@@ -82,6 +85,9 @@
             "require": {
                 "ext-json": "*",
                 "psr/log": "~1.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^9"
             },
             "type": "library",
             "autoload": {
@@ -100,7 +106,11 @@
                 }
             ],
             "description": "The core components of Ark 2",
-            "time": "2020-04-29T03:11:54+00:00"
+            "support": {
+                "issues": "https://github.com/sinri/Ark-Core/issues",
+                "source": "https://github.com/sinri/Ark-Core/tree/2.7.12"
+            },
+            "time": "2021-04-11T05:36:41+00:00"
         }
     ],
     "packages-dev": [],
@@ -110,5 +120,6 @@
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": [],
-    "platform-dev": []
+    "platform-dev": [],
+    "plugin-api-version": "2.1.0"
 }

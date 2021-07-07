@@ -4,9 +4,10 @@
 namespace sinri\ark\websocket;
 
 
-use Exception;
 use sinri\ark\core\ArkHelper;
 use sinri\ark\core\ArkLogger;
+use sinri\ark\websocket\exception\ArkWebSocketError;
+use sinri\ark\websocket\exception\ArkWebSocketTargetLost;
 
 class ArkWebSocketDaemon
 {
@@ -46,7 +47,7 @@ class ArkWebSocketDaemon
      * @param ArkWebSocketConnections $connections
      * @param ArkLogger|null $logger
      */
-    public function __construct($host, $port, $servicePath, $worker, $connections, $logger = null)
+    public function __construct(string $host, int $port, string $servicePath, ArkWebSocketWorker $worker, ArkWebSocketConnections $connections, ArkLogger $logger = null)
     {
         $this->host = $host;
         $this->port = $port;
@@ -59,7 +60,8 @@ class ArkWebSocketDaemon
     /**
      * @return resource[]
      */
-    private function getChangedSockets(){
+    private function getChangedSockets(): array
+    {
         $changed = $this->connections->getClients();
         $selected = socket_select($changed, $null, $null, 0, 10);
         if ($selected === false) {
@@ -75,10 +77,7 @@ class ArkWebSocketDaemon
         return $changed;
     }
 
-    /**
-     * @param resource[] $changed
-     */
-    private function handleNewConnection(&$changed)
+    private function handleNewConnection()
     {
         $this->logger->info('a new client came up');
         $socket_new = socket_accept($this->connections->getSocket()); //accept new socket
@@ -133,7 +132,7 @@ class ArkWebSocketDaemon
                     if (strlen($buffer) === 0) {
                         $error_code = socket_last_error();
                         $error_text = socket_strerror($error_code);
-                        $this->logger->error(
+                        $this->logger->warning(
                             __METHOD__ . ' socket_recv got false, seems died',
                             [
                                 'hash' => $client_hash,
@@ -145,7 +144,7 @@ class ArkWebSocketDaemon
                         $this->connections->removeClient($changed_socket);
                         //plugin
                         $this->worker->processCloseSocket($client_hash);
-                        throw new Exception(__METHOD__ . " socket_recv got false, seems died.", intval($changed_socket));
+                        throw new ArkWebSocketTargetLost($changed_socket, __METHOD__ . " socket_recv got false, seems died.");
                     }
                     break;
                 }
@@ -159,59 +158,66 @@ class ArkWebSocketDaemon
 
             // plugin
             $this->worker->processReadMessage($client_hash, $buffer);
-        } catch (Exception $exception) {
+        } catch (ArkWebSocketTargetLost $exception) {
             // bye bye
         }
     }
 
     /**
-     * @throws Exception
+     * @throws ArkWebSocketError
      */
     public function loop()
     {
-        try {
-            $this->connections->startListening($this->port, 0);
-            $this->logger->info('socket listening on ' . $this->port . ' started, client set updated', [
-                'total' => $this->connections->getCountOfClients(),
-                'clients' => $this->connections->getClients(),
-            ]);
+        $this->connections->startListening($this->port);
+        $this->logger->info('socket listening on ' . $this->port . ' started, client set updated', [
+            'total' => $this->connections->getCountOfClients(),
+            'clients' => $this->connections->getClients(),
+        ]);
 
-            $this->logger->info('daemon loop running...');
-            while (true) {
-                $changed = $this->getChangedSockets();
+        $this->logger->info('daemon loop running...');
+        while (true) {
+            if ($this->shouldStopLooping()) {
+                break;
+            }
 
-                foreach ($changed as $changed_socket) {
-                    if (false == $this->connections->getClientHash($changed_socket)) {
-                        if (is_resource($changed_socket)) {
-                            socket_shutdown($changed_socket);
-                            $this->connections->removeClient($changed_socket);
-                            socket_close($changed_socket);
-                        }
-                        continue;
+            $changed = $this->getChangedSockets();
+
+            foreach ($changed as $changed_socket) {
+                if (false == $this->connections->getClientHash($changed_socket)) {
+                    if (is_resource($changed_socket)) {
+                        socket_shutdown($changed_socket);
+                        $this->connections->removeClient($changed_socket);
+                        socket_close($changed_socket);
                     }
-                    if ($changed_socket === $this->connections->getSocket()) {
-                        $this->handleNewConnection($changed);
-                    } else {
-                        $this->readSocket($changed_socket);
-                    }
+                    continue;
+                }
+                if ($changed_socket === $this->connections->getSocket()) {
+                    $this->handleNewConnection(); // removed $changed
+                } else {
+                    $this->readSocket($changed_socket);
                 }
             }
-        } catch (Exception $exception) {
-            $error_code = socket_last_error();
-            $error_string = socket_strerror($error_code);
-            $this->logger->error(__METHOD__ . ' ' . $exception->getMessage(), ['error_code' => $error_code, 'error_string' => $error_string]);
-            throw new Exception($exception->getMessage() . ', error [' . $error_code . '] ' . $error_string);
-        } finally {
-            $this->logger->info('daemon loop ending (this line would never be printed)');
-            $this->connections->stopListening();
         }
+
+        $this->logger->info('daemon loop ending (this line would never be printed unless stop command received)');
+        $this->connections->stopListening();
+    }
+
+    /**
+     * @return bool
+     * @since 0.1.6
+     * To be override
+     */
+    public function shouldStopLooping(): bool
+    {
+        return false;
     }
 
     /**
      * @param string $received_header
      * @param resource $client_conn
      */
-    protected function perform_handshaking($received_header, $client_conn)
+    protected function perform_handshaking(string $received_header, $client_conn)
     {
         $headers = array();
         $lines = preg_split("/\r\n/", $received_header);

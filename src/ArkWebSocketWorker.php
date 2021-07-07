@@ -20,9 +20,9 @@ abstract class ArkWebSocketWorker
     /**
      * ArkWebSocketWorker constructor.
      * @param ArkWebSocketConnections $connections
-     * @param null|ArkLogger $logger
+     * @param ArkLogger|null $logger
      */
-    public function __construct($connections, $logger = null)
+    public function __construct(ArkWebSocketConnections $connections, ArkLogger $logger = null)
     {
         $this->connections = $connections;
         if ($logger === null) {
@@ -37,7 +37,7 @@ abstract class ArkWebSocketWorker
      * @param string $header Text as Raw Headers
      * @return $this
      */
-    abstract public function processNewSocket($clientHash, $header);
+    abstract public function processNewSocket(string $clientHash, string $header);
 
     /**
      * Fetch the client request text and respond
@@ -45,20 +45,20 @@ abstract class ArkWebSocketWorker
      * @param string $buffer need to be `unmask`ed for text
      * @return $this
      */
-    abstract public function processReadMessage($clientHash, $buffer);
+    abstract public function processReadMessage(string $clientHash, string $buffer);
 
     /**
      * Respond for a client leaving
      * @param string $clientHash
      * @return $this
      */
-    abstract public function processCloseSocket($clientHash);
+    abstract public function processCloseSocket(string $clientHash);
 
     /**
      * @param string $original_msg
      * @return $this
      */
-    public function maskAndBroadcastToClients($original_msg)
+    public function maskAndBroadcastToClients(string $original_msg)
     {
         $msg = self::mask($original_msg);
         $this->connections->handleEachClient(function ($socketHash, $changed_socket) use ($msg) {
@@ -74,7 +74,7 @@ abstract class ArkWebSocketWorker
      * @return $this
      * @since 0.1.1
      */
-    public function maskAndSendToClients($clientHashList, $original_msg)
+    public function maskAndSendToClients(array $clientHashList, string $original_msg)
     {
         $msg = self::mask($original_msg);
         foreach ($clientHashList as $clientHash) {
@@ -93,7 +93,7 @@ abstract class ArkWebSocketWorker
      * @param string $text
      * @return string
      */
-    public static function mask($text)
+    public static function mask(string $text): string
     {
         $b1 = 0x80 | (0x1 & 0x0f);
         $length = strlen($text);
@@ -111,7 +111,7 @@ abstract class ArkWebSocketWorker
      * @param string $text
      * @return string
      */
-    public static function unmask($text)
+    public static function unmask(string $text): string
     {
         if (strlen($text) === 0) return '';
         $length = ord($text[1]) & 127;

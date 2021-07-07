@@ -9,14 +9,14 @@ use sinri\ark\websocket\ArkWebSocketWorker;
 class SampleWorker extends ArkWebSocketWorker
 {
 
-    public function processNewSocket($clientHash, $header)
+    public function processNewSocket(string $clientHash, string $header)
     {
         $response = __METHOD__ . ' ' . $clientHash . ' , ' . $header;
         $this->logger->info(__METHOD__, ['hash' => $clientHash, 'header' => $header]);
         $this->maskAndBroadcastToClients($response);
     }
 
-    public function processReadMessage($clientHash, $buffer)
+    public function processReadMessage(string $clientHash, string $buffer)
     {
         $receivedMessage = self::unmask($buffer);
         $response = __METHOD__ . ' ' . $clientHash . ' , ' . $receivedMessage;
@@ -24,7 +24,7 @@ class SampleWorker extends ArkWebSocketWorker
         $this->maskAndBroadcastToClients($response);
     }
 
-    public function processCloseSocket($clientHash)
+    public function processCloseSocket(string $clientHash)
     {
         $response = __METHOD__ . ' ' . $clientHash;
         $this->logger->info(__METHOD__, ['hash' => $clientHash]);
