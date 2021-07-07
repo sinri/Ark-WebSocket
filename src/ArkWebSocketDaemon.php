@@ -197,6 +197,11 @@ class ArkWebSocketDaemon
                     $this->readSocket($changed_socket);
                 }
             }
+
+            // Since 0.1.7 Lu Liangjun said he want to send messages to clients
+            if ($this->worker->processShouldCallSendMessageTasksNow()) {
+                $this->worker->processSendMessageTasks();
+            }
         }
 
         $this->logger->info('daemon loop ending (this line would never be printed unless stop command received)');
@@ -206,11 +211,11 @@ class ArkWebSocketDaemon
     /**
      * @return bool
      * @since 0.1.6
-     * To be override
+     * @since 0.1.7 put into worker
      */
     public function shouldStopLooping(): bool
     {
-        return false;
+        return $this->worker->processQueryLoopShouldStop();
     }
 
     /**

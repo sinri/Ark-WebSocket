@@ -55,6 +55,34 @@ abstract class ArkWebSocketWorker
     abstract public function processCloseSocket(string $clientHash);
 
     /**
+     * @return bool
+     * @since 0.1.7
+     */
+    public function processQueryLoopShouldStop(): bool
+    {
+        return false;
+    }
+
+    /**
+     * To be override
+     * @return bool
+     * @since 0.1.7
+     */
+    public function processShouldCallSendMessageTasksNow(): bool
+    {
+        return false;
+    }
+
+    /**
+     * To be override
+     * @return void
+     * @since 0.1.7
+     */
+    public function processSendMessageTasks()
+    {
+    }
+
+    /**
      * @param string $original_msg
      * @return $this
      */
