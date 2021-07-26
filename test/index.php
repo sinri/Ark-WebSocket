@@ -12,7 +12,7 @@
         <label>
             Connection: [{{websocketStatus}}]
             <button v-on:click="closeConnection">Close</button>
-            <button v-on:click="resetConnection">Reset</button>
+            <button v-on:click="openConnection">Open</button>
         </label>
         <label>
             Send Message:
@@ -60,10 +60,13 @@
                     websocket = null;
                 }
             },
-            resetConnection: function () {
-                let that = this;
+            openConnection: function () {
+                if (websocket !== null) {
+                    alert('Please close first!')
+                    return;
+                }
 
-                this.closeConnection();
+                let that = this;
 
                 websocket = new WebSocket(wsUri);
 
@@ -99,7 +102,7 @@
             }
         },
         mounted: function () {
-            this.resetConnection();
+            this.openConnection();
         }
     });
 </script>
