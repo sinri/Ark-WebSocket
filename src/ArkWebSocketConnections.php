@@ -119,6 +119,7 @@ class ArkWebSocketConnections
     /**
      * @param resource $socket
      * @return string|false
+     * @since 0.1.8 add server node hash to it
      */
     public function getClientHash($socket)
     {
@@ -126,9 +127,23 @@ class ArkWebSocketConnections
             return false;
         }
         if ($this->getSocket() === $socket) {
-            return "server";
+            return $this->getServerNodeHash($socket) . '-CLIENTS';
         }
         $done = @socket_getpeername($socket, $ip, $port); //get ip address of connected socket
+        return $done ? ($this->getServerNodeHash($socket) . '-' . $ip . ':' . $port) : false;
+    }
+
+    /**
+     * @param resource $socket
+     * @return false|string
+     * @since 0.1.8
+     */
+    public function getServerNodeHash($socket)
+    {
+        if ($socket == null) {
+            return false;
+        }
+        $done = @socket_getsockname($socket, $ip, $port);
         return $done ? ($ip . ':' . $port) : false;
     }
 
