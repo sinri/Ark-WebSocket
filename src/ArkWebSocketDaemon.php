@@ -106,7 +106,14 @@ class ArkWebSocketDaemon
         $this->connections->registerClient($socket_new);
 
         //plugin
-        $this->worker->processNewSocket($client_hash, $header);
+        try {
+            $this->worker->processNewSocket($client_hash, $header);
+        } catch (exception\ArkWebSocketPersonaNonGrata $e) {
+            // since 0.1.9
+            $this->logger->warning('Persona Non Grata, Closing Target Socket: ' . $e->getMessage(), ['client_hash' => $client_hash]);
+            socket_close($socket_new);
+            $this->connections->removeClientByHash($client_hash);
+        }
 
         $this->logger->info('new client socket processed');
     }

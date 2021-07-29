@@ -5,6 +5,7 @@ namespace sinri\ark\websocket;
 
 
 use sinri\ark\core\ArkLogger;
+use sinri\ark\websocket\exception\ArkWebSocketPersonaNonGrata;
 
 abstract class ArkWebSocketWorker
 {
@@ -36,6 +37,7 @@ abstract class ArkWebSocketWorker
      * @param string $clientHash
      * @param string $header Text as Raw Headers
      * @return $this
+     * @throws ArkWebSocketPersonaNonGrata 遇见这个异常，说明是个不受欢迎的客户端，灭了 @since 0.1.9
      */
     abstract public function processNewSocket(string $clientHash, string $header);
 
@@ -44,6 +46,7 @@ abstract class ArkWebSocketWorker
      * @param string $clientHash
      * @param string $buffer need to be `unmask`ed for text
      * @return $this
+     * @throws ArkWebSocketPersonaNonGrata 遇见这个异常，说明是个不受欢迎的客户端，灭了 @since 0.1.9
      */
     abstract public function processReadMessage(string $clientHash, string $buffer);
 
